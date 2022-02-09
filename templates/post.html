@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="margin-top: 10vh">
+<div class="row">
+  
+  <div class="col-3">
+    <h2><a class="maintitle" href="/">De Vitrine</a></h2>
+  </div>
+
+  <div class="col-7">
+    <h1>{{title}}</h1>
+    <div style="margin-top: 5vh">
+        {{html}}
+    </div>
+  </div>
+
+  <div class="col-2">
+    <div style="border-left: 2px solid #eee; padding-left: 1ch">
+        {% for tag in tags %}
+        <p style="font-size: 80%">{{tag}}</p>
+        {% endfor %}
+    </div>
+  </div>
+
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {% block head %}
+    <title>{% block title %}De Vitrine{% endblock %}</title>
+    <link href="/static/main.css" rel="stylesheet"/>
+    {% endblock %}
+    <script async defer data-domain="vitrine.metabotnik.com" src="https://plausible.io/js/plausible.js"></script>
+    <script src="/static/main.js"></script>
+    {% block head_last %}{% endblock %}
+  </head>
+
+  <body>
+
+
+    {% block content %}{% endblock %}
+
+    <footer class="p-2 bg-light">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col">
+            Hier meer info
+          </div>
+          <div class="col">
+            En daar ook
+          </div>
+
+        </div>
+      </div>
+    </footer>
+  </body>  
+</html>

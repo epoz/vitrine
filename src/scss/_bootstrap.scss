@@ -1,0 +1,18 @@
+// Bootstrap variable overrides
+$primary: #0c245a;
+$link-color: #336699;
+
+$font-size-base-factor: 1.2;
+
+// Increase relative size of font-size-base with factor font-size-base-factor
+$font-size-base: 1rem * $font-size-base-factor;
+$h1-font-size: $font-size-base * 2.5 / $font-size-base-factor;
+$h2-font-size: $font-size-base * 2 / $font-size-base-factor;
+$h3-font-size: $font-size-base * 1.75 / $font-size-base-factor;
+$h4-font-size: $font-size-base * 1.5 / $font-size-base-factor;
+$h5-font-size: $font-size-base * 1.25 / $font-size-base-factor;
+$h6-font-size: $font-size-base / $font-size-base-factor;
+
+$font-family-base: "Montserrat";
+
+@import "bootstrap/scss/bootstrap";

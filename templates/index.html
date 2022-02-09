@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="margin-top: 10vh">
+<div class="row">
+  
+  <div class="col-3">
+    <h2 class="maintitle">De Vitrine</h2>
+  </div>
+
+  <div class="col-7">
+  {% if  tag %}
+  <h2 style="margin-bottom: 5vh">{{tag}}</h2>
+  {% endif %}
+    {% for obj in objs %}
+        <h4 style="margin-bottom: 3ch"><a href="/{{obj['filename']}}">{{obj["title"]}}</a></h4>
+    {% endfor %}
+  </div>
+
+  <div class="col-2">
+    <div style="border-left: 2px solid #eee; padding-left: 1ch">
+        {% for tag in tags %}
+        <p style="font-size: 80%">{{tag}}</p>
+        {% endfor %}
+    </div>
+  </div>
+
+</div>
+</div>
+{% endblock %}

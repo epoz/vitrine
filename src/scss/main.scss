@@ -1,0 +1,37 @@
+@import "bootstrap";
+@import "fonts";
+
+header {
+  border-bottom-style: solid;
+  border-bottom-width: 3px;
+  border-color: black;
+  margin-bottom: 1em;
+}
+
+a {
+  text-decoration: none;
+}
+
+p {
+  margin-bottom: 0;
+  line-height: 1.45;
+}
+
+footer {
+  margin-top: 10vh;
+}
+
+img {
+  margin-top: 2ch;
+}
+
+blockquote {
+  margin: 2ch 0 3ch 0;
+  padding-left: 2ch;
+  font-style: italic;
+  width: 75%;
+}
+
+.maintitle {
+  color: red;
+}
