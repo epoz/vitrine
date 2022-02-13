@@ -67,11 +67,11 @@ def download_from_dropbox():
         os.mkdir(EXTRACT_PATH)
 
     print("Downloading zipfile from [blue]Dropbox[/blue]", end=" ")
-    # r = requests.get(DROPBOX_URL)
-    # if r.status_code == 200:
-    if True:
+    r = requests.get(DROPBOX_URL)
+    if r.status_code == 200:
         zip_path = os.path.join(EXTRACT_PATH, "tmp.zip")
-        # open(zip_path, "wb").write(r.content)
+        print("OK! extracting the [blue]tmp.zip[/blue]", end=" ")
+        open(zip_path, "wb").write(r.content)
         with zipfile.ZipFile(zip_path) as Z:
             for zf in track(Z.infolist()):
                 if not zf.filename.startswith("__MACOSX"):
@@ -176,7 +176,7 @@ def to_html(obj):
 
 
 def main():
-    # download_from_dropbox()
+    download_from_dropbox()
     data = []
     tags = {}
 
