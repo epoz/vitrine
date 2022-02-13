@@ -13,16 +13,18 @@ a {
 }
 
 p {
-  margin-bottom: 0;
+  margin-bottom: 2vh;
   line-height: 1.45;
 }
 
 footer {
   margin-top: 10vh;
+  height: 15vh;
 }
 
 img {
   margin-top: 2ch;
+  width: 100%;
 }
 
 blockquote {
@@ -34,4 +36,5 @@ blockquote {
 
 .maintitle {
   color: red;
+  font-family: Lektorat;
 }

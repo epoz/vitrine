@@ -92,9 +92,16 @@ def collect_paths_todo():
     return filepaths
 
 
+def fixes_prep(doc):
+    doc.first_image = None
+
+
 def fixes(elem, doc):
     if isinstance(elem, panflute.Image):
+        if doc.first_image is None:
+            doc.first_image = elem
         elem.url = elem.url.replace(OUT_PATH, "")
+        elem.attributes = {}
 
 
 def hid(somestring):
@@ -113,15 +120,22 @@ def convert_docx(input_path):
     )
     doc = panflute.load(io.StringIO(data))
     # fix all the href in images
-    newdoc = panflute.run_filter(fixes, doc=doc)
+    newdoc = panflute.run_filter(fixes, prepare=fixes_prep, doc=doc)
 
     tags = []
     newd = []
     _, docfilename = os.path.split(input_path)
+    docfilename = docfilename.lower().replace(".docx", "")
+    try:
+        seq = int(docfilename.split("_")[-1])
+    except:
+        seq = 0
+
     tmp = {
+        "seq": seq,
         "filepath": input_path,
         "doc": newdoc,
-        "filename": docfilename.lower().replace(".docx", ""),
+        "filename": docfilename,
     }
     for p in newdoc.content:
         s = panflute.stringify(p).strip()
@@ -179,31 +193,32 @@ def main():
             print(f"Problem with {f}")
 
     # sort tags by usage
-    tags_by_count = reversed(
-        sorted([(t, tt) for t, tt in tags.items()], key=lambda x: len(x[1]))
+    tags_by_count = list(
+        reversed(sorted([(t, tt) for t, tt in tags.items()], key=lambda x: len(x[1])))
     )
 
     outfile_path = os.path.join(OUT_PATH, "index.html")
     template = env.get_template("index.html")
-    out = template.render({"objs": data, "tags": tags_by_count})
+    out = template.render(
+        {
+            "objs": list(reversed(sorted(data, key=lambda x: x.get("seq", 0))))[:24],
+            "tags": [x for x, y in tags_by_count],
+        }
+    )
     open(outfile_path, "w").write(out)
 
-    for tag, objs in tags.items():        
+    for tag, objs in tags.items():
         outfile_path = os.path.join(OUT_PATH, f"{tag}.html")
-        out = template.render({"objs": objs, "tags": tags_by_count, "tag":tag})
+        out = template.render(
+            {
+                "objs": reversed(sorted(objs, key=lambda x: x.get("seq", 0))),
+                "tags": [x for x, y in tags_by_count],
+                "tag": tag,
+            }
+        )
         open(outfile_path, "w").write(out)
     return data
 
 
 if __name__ == "__main__":
     data = main()
-
-"""
-archeologie R 0 / G 78 / B 146
-boekgeschiedenis R 233 / G 131 / B 0
-boekwetenschap R 0 / G 78 / B 146
-cultuurgeschiedenis R 0 / G 78 / B 146
-geschiedenis R 233 / G 131 / B 0
-kunstgeschiedenis R 0 / G 78 / B 146
-virtueel R 0 / G 78 / B 146
-"""

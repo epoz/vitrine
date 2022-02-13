@@ -4,26 +4,40 @@
 <div class="row">
   
   <div class="col-3">
-    <h2 class="maintitle">De Vitrine</h2>
+    <h2><a class="maintitle" href="/">De Vitrine</a></h2>
   </div>
 
   <div class="col-7">
-  {% if  tag %}
-  <h2 style="margin-bottom: 5vh">{{tag}}</h2>
-  {% endif %}
+    {% if  tag %}<h2 style="margin-bottom: 5vh">{{tag}}</h2>{% endif %}
+
+    <div id="overview" class="row grid" style="cursor: pointer">
     {% for obj in objs %}
-        <h4 style="margin-bottom: 3ch"><a href="/{{obj['filename']}}">{{obj["title"]}}</a></h4>
+        <div class="col-sm-6 col-lg-5 mb-4 grid-item" >
+            <a href="/{{obj['filename']}}"><div class="card">
+                {% if obj['doc'].first_image %}
+                <img src="{{obj['doc'].first_image.url}}" style="margin: 0"/>
+                {% endif %}
+                <div class="card-body">
+                <h4>{{obj["title"]}}</h4>
+            </div></a>
+        </div>
+        
+        </div>        
     {% endfor %}
+    </div>
+
   </div>
 
   <div class="col-2">
     <div style="border-left: 2px solid #eee; padding-left: 1ch">
         {% for tag in tags %}
-        <p style="font-size: 80%">{{tag}}</p>
+        <p style="font-size: 75%; margin: 0"><a href="/{{tag}}.html">{{tag}}</a></p>
         {% endfor %}
     </div>
   </div>
 
 </div>
 </div>
+
 {% endblock %}
+
