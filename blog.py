@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os, sys, shutil, zlib
+import os, sys, shutil, zlib, hashlib
 import jinja2
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup
@@ -10,7 +10,7 @@ import requests
 import zipfile
 from rich import print
 from rich.progress import track
-
+from docx import Document
 
 DROPBOX_URL = os.getenv("DROPBOX_URL")
 TEMPLATE_PATH = os.getenv("TEMPLATE_PATH")
@@ -59,6 +59,11 @@ def go(input_path):
 
 
 def download_from_dropbox():
+    zip_path = os.path.join(EXTRACT_PATH, "tmp.zip")
+    if os.path.exists(zip_path):
+        print("File exists [blue]tmp.zip[/blue], not downloading again.")
+        return zip_path
+
     if not os.path.exists(OUT_PATH):
         print(f"Creating path [green]{OUT_PATH}[/green]")
         os.mkdir(OUT_PATH)
@@ -69,13 +74,13 @@ def download_from_dropbox():
     print("Downloading zipfile from [blue]Dropbox[/blue]", end=" ")
     r = requests.get(DROPBOX_URL)
     if r.status_code == 200:
-        zip_path = os.path.join(EXTRACT_PATH, "tmp.zip")
-        print("OK! extracting the [blue]tmp.zip[/blue]", end=" ")
+        print("OK! extracting the [blue]tmp.zip[/blue]")
         open(zip_path, "wb").write(r.content)
         with zipfile.ZipFile(zip_path) as Z:
             for zf in track(Z.infolist()):
                 if not zf.filename.startswith("__MACOSX"):
                     Z.extract(zf, EXTRACT_PATH)
+    return zip_path
 
 
 def collect_paths_todo():
@@ -113,6 +118,11 @@ def convert_docx(input_path):
     if not input_path.lower().endswith(".docx"):
         return
     outfile_media = input_path.replace(EXTRACT_PATH, OUT_PATH).replace(".docx", "")
+
+    d = Document(input_path)
+    author = d.core_properties.author
+
+
     data = pypandoc.convert_file(
         input_path,
         "json",
@@ -136,6 +146,7 @@ def convert_docx(input_path):
         "filepath": input_path,
         "doc": newdoc,
         "filename": docfilename,
+        "author": author
     }
     for p in newdoc.content:
         s = panflute.stringify(p).strip()
@@ -176,11 +187,17 @@ def to_html(obj):
 
 
 def main():
-    download_from_dropbox()
+    zip_path = download_from_dropbox()
     data = []
     tags = {}
 
     for f in track(collect_paths_todo()):
+        # if this file has not changed since the has on disk, do nothing
+        newhash = hashlib.md5(open(f, "rb").read()).hexdigest()
+        if os.path.exists(f + ".hash"):
+            oldhash = open(f + ".hash").read()
+            if newhash == oldhash:
+                continue
         try:
             obj = convert_docx(f)
             if not obj:
@@ -191,6 +208,7 @@ def main():
                 tags.setdefault(tag, []).append(obj)
         except RuntimeError:
             print(f"Problem with {f}")
+        open(f + ".hash", "w").write(newhash)
 
     # sort tags by usage
     tags_by_count = list(
@@ -217,6 +235,9 @@ def main():
             }
         )
         open(outfile_path, "w").write(out)
+    if os.path.exists(zip_path):
+        print(f"Deleting [red]{zip_path}[/red]")
+        os.remove(zip_path)
     return data
 
 
