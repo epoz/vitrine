@@ -5,6 +5,7 @@
   
   <div class="col-3">
     <h2><a class="maintitle" href="/">De Vitrine</a></h2>
+    <h3>De plek waar wetenschap en erfgoed elkaar ontmoeten</h3>
   </div>
 
   <div class="col-7">
@@ -13,7 +14,7 @@
     <div id="overview" class="row grid" style="cursor: pointer">
     {% for obj in objs %}
         <div class="col-sm-6 col-lg-5 mb-4 grid-item" >
-            <a href="/{{obj['filename']}}"><div class="card">
+            <a href="/{{obj['slug']}}.html"><div class="card">
                 {% if obj['doc'].first_image %}
                 <img src="{{obj['doc'].first_image.url}}" style="margin: 0"/>
                 {% endif %}

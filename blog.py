@@ -11,11 +11,28 @@ import zipfile
 from rich import print
 from rich.progress import track
 from docx import Document
+import configparser
 
-DROPBOX_URL = os.getenv("DROPBOX_URL")
-TEMPLATE_PATH = os.getenv("TEMPLATE_PATH")
-OUT_PATH = os.getenv("OUT_PATH")
-EXTRACT_PATH = os.getenv("EXTRACT_PATH")
+
+if len(sys.argv) < 2:
+    print("A config file to read should be specified as first argument")
+    sys.exit(2)
+
+config = configparser.ConfigParser()
+config.read(sys.argv[1])
+if "main" not in config:
+    print(f"[red]main[/red] section not found in config {sys.argv[1]}")
+    sys.exit(1)
+
+main = config["main"]
+
+
+DROPBOX_URL = main.get("dropbox_url")
+TEMPLATE_PATH = main.get("template_path")
+OUT_PATH = main.get("out_path")
+EXTRACT_PATH = main.get("extract_path")
+DOWNLOAD = main.getboolean("download")
+
 
 print(f"Init template environment [green]{TEMPLATE_PATH}[/green]")
 env = Environment(
@@ -25,7 +42,11 @@ env = Environment(
 
 
 def go(input_path):
-    if input_path.endswith(".jpg"):
+    if (
+        input_path.endswith(".jpg")
+        or input_path.endswith(".png")
+        or input_path.endswith(".pdf")
+    ):
         print(f"Copying {input_path} to {OUT_PATH}")
         shutil.copy(input_path, OUT_PATH)
     if not input_path.endswith(".docx"):
@@ -62,6 +83,10 @@ def download_from_dropbox():
     zip_path = os.path.join(EXTRACT_PATH, "tmp.zip")
     if os.path.exists(zip_path):
         print("File exists [blue]tmp.zip[/blue], not downloading again.")
+        return zip_path
+
+    if not DOWNLOAD:
+        print("Download flag set to [blue]False[/blue], not downloading again.")
         return zip_path
 
     if not os.path.exists(OUT_PATH):
@@ -115,13 +140,17 @@ def hid(somestring):
 
 
 def convert_docx(input_path):
+    if (
+        input_path.endswith(".jpg")
+        or input_path.endswith(".png")
+        or input_path.endswith(".pdf")
+    ):
+        print(f"Copying {input_path} to {OUT_PATH}")
+        shutil.copy(input_path, OUT_PATH)
+
     if not input_path.lower().endswith(".docx"):
         return
     outfile_media = input_path.replace(EXTRACT_PATH, OUT_PATH).replace(".docx", "")
-
-    d = Document(input_path)
-    author = d.core_properties.author
-
 
     data = pypandoc.convert_file(
         input_path,
@@ -141,13 +170,16 @@ def convert_docx(input_path):
     except:
         seq = 0
 
+    d = Document(input_path)
     tmp = {
         "seq": seq,
         "filepath": input_path,
         "doc": newdoc,
         "filename": docfilename,
-        "author": author
+        "author": d.core_properties.author,
+        "title": d.core_properties.title,
     }
+
     for p in newdoc.content:
         s = panflute.stringify(p).strip()
         if s.lower().startswith("tags:"):
@@ -157,39 +189,55 @@ def convert_docx(input_path):
         else:
             newd.append(p)
 
-    tmp["title"] = panflute.stringify(newd[0]).strip()
-    if len(newd) > 1:
-        newd = newd[1:]
+    if not tmp["title"]:
+        tmp["title"] = panflute.stringify(newd[0]).strip()
+        if len(newd) > 1:
+            newd = newd[1:]
 
     tmp["html"] = Markup(
         panflute.convert_text(newd, input_format="panflute", output_format="html")
     )
-    tmp["filepath"] = input_path
+
+    tmp["slug"] = sluggify(tmp.get("title", tmp.get("filename", "_")))
+
     return tmp
+
+
+def sluggify(something):
+    buf = []
+    for c in something.lower():
+        if c == " ":
+            c = "-"
+        if c in "0123456789abcdefghijklmnopqrstuvwxyz-":
+            buf.append(c)
+    tmp = "".join(buf)
+    return tmp.strip("-")
 
 
 def to_html(obj):
     if not obj:
         return
+
+    filename = obj.get("filename")
     try:
-        template = env.get_template(f"post.html")
+        template = env.get_template(f"{filename}.html")
     except jinja2.exceptions.TemplateNotFound:
-        print("Oops, where is your template?")
-        sys.exit(1)
+        try:
+            template = env.get_template(f"post.html")
+        except jinja2.exceptions.TemplateNotFound:
+            print("Oops, where is your template?")
+            sys.exit(1)
 
     out = template.render(obj)
-    filename = obj.get("filename")
-    outfile_path = os.path.join(OUT_PATH, filename)
-    if not os.path.exists(outfile_path):
-        os.mkdir(outfile_path)
-
-    open(outfile_path + "/index.html", "w").write(out)
+    outfile_path = os.path.join(OUT_PATH, obj.get("slug") + ".html")
+    open(outfile_path, "w").write(out)
 
 
 def main():
     zip_path = download_from_dropbox()
     data = []
     tags = {}
+    authors = {}
 
     for f in track(collect_paths_todo()):
         # if this file has not changed since the has on disk, do nothing
@@ -206,6 +254,8 @@ def main():
             data.append(obj)
             for tag in obj.get("tags", []):
                 tags.setdefault(tag, []).append(obj)
+            if len(obj.get("author", "")) > 0:
+                authors.setdefault(obj["author"], []).append(obj)
         except RuntimeError:
             print(f"Problem with {f}")
         open(f + ".hash", "w").write(newhash)
@@ -235,6 +285,18 @@ def main():
             }
         )
         open(outfile_path, "w").write(out)
+
+    for author, objs in authors.items():
+        outfile_path = os.path.join(OUT_PATH, f"{author}.html")
+        out = template.render(
+            {
+                "objs": reversed(sorted(objs, key=lambda x: x.get("seq", 0))),
+                "tags": [x for x, y in tags_by_count],
+                "tag": tag,
+            }
+        )
+        open(outfile_path, "w").write(out)
+
     if os.path.exists(zip_path):
         print(f"Deleting [red]{zip_path}[/red]")
         os.remove(zip_path)
