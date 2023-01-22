@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os, sys, shutil, zlib, hashlib
+import os, sys, shutil, zlib
 import jinja2
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup
@@ -178,6 +178,7 @@ def convert_docx(input_path):
         "filename": docfilename,
         "author": d.core_properties.author,
         "title": d.core_properties.title,
+        "subject": d.core_properties.subject,
     }
 
     for p in newdoc.content:
@@ -240,12 +241,6 @@ def main():
     authors = {}
 
     for f in track(collect_paths_todo()):
-        # if this file has not changed since the has on disk, do nothing
-        newhash = hashlib.md5(open(f, "rb").read()).hexdigest()
-        if os.path.exists(f + ".hash"):
-            oldhash = open(f + ".hash").read()
-            if newhash == oldhash:
-                continue
         try:
             obj = convert_docx(f)
             if not obj:
@@ -258,7 +253,6 @@ def main():
                 authors.setdefault(obj["author"], []).append(obj)
         except RuntimeError:
             print(f"Problem with {f}")
-        open(f + ".hash", "w").write(newhash)
 
     # sort tags by usage
     tags_by_count = list(
@@ -275,6 +269,7 @@ def main():
     )
     open(outfile_path, "w").write(out)
 
+    template = env.get_template("posts.html")
     for tag, objs in tags.items():
         outfile_path = os.path.join(OUT_PATH, f"{tag}.html")
         out = template.render(
@@ -292,7 +287,7 @@ def main():
             {
                 "objs": reversed(sorted(objs, key=lambda x: x.get("seq", 0))),
                 "tags": [x for x, y in tags_by_count],
-                "tag": tag,
+                "tag": author,
             }
         )
         open(outfile_path, "w").write(out)
