@@ -179,6 +179,7 @@ def convert_docx(input_path):
         "author": d.core_properties.author,
         "title": d.core_properties.title,
         "subject": d.core_properties.subject,
+        "comments": d.core_properties.comments,
     }
 
     for p in newdoc.content:
@@ -191,7 +192,8 @@ def convert_docx(input_path):
             newd.append(p)
 
     if not tmp["title"]:
-        tmp["title"] = panflute.stringify(newd[0]).strip()
+        first_part = panflute.stringify(newd[0]).strip()
+        tmp["title"] = first_part.split(".")[0]
         if len(newd) > 1:
             newd = newd[1:]
 
